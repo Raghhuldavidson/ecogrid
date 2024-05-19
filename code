@@ -1,0 +1,116 @@
+import pandas as pd
+
+class EcoGridModel:
+    def __init__(self, dataset_path="EcoGrid.csv")
+        self.dataset_path = dataset_path
+        self.dataset = pd.read_csv(self.dataset_path)
+
+    def check_conditions(self, road_id):
+        road_details = self.dataset[self.dataset['Road ID'] == int(road_id)]
+        pipeline_details = self.dataset[(self.dataset['Road ID'] == int(road_id)) & (self.dataset['Pipe Material'].notnull())]
+        electric_line_details = self.dataset[(self.dataset['Road ID'] == int(road_id)) & (self.dataset['Electric Cable Material'].notnull())]
+
+        if road_details.empty:
+            print("Road ID not found in the dataset.")
+        else:
+#road details
+            road_age = road_details['Road Age (years)'].values[0]
+            last_maintenance_road = road_details['Last Maintenance (years)_x'].values[0]
+            need_service_road = 'Yes' if (road_details['Road Condition'].values[0] == 'Poor') or (road_age - last_maintenance_road) >= 5 else 'No'
+            disaster_type = road_details['Disaster Type'].values[0] if 'Disaster Type' in road_details else 'N/A'
+            disaster_year = road_details['Disaster Year'].values[0] if 'Disaster Year' in road_details else 'N/A'
+#print details
+            print("Road Details:")
+            print("Road ID:", road_id)
+            print("Road Age (years):", road_age)
+            print("Last Maintenance Year (Road):", last_maintenance_road)
+            print("Needs Servicing (Road):", need_service_road)
+            print("Disaster Type:", disaster_type)
+            print("Disaster Year:", disaster_year)
+
+        if pipeline_details.empty:
+            print("\nPipeline details not found in the dataset.")
+        else:
+            pipe_material = pipeline_details['Pipe Material'].values[0]
+            last_maintenance_pipe = pipeline_details['Last Maintenance (years)_x'].values[0]
+            need_service_pipe = 'Yes' if (pipeline_details['Pipe Condition'].values[0] == 'Poor') or (road_age - last_maintenance_pipe) >= 5 else 'No'
+            print("\nPipeline Details:")
+            print("Pipe Material:", pipe_material)
+            print("Last Maintenance Year (Pipeline):", last_maintenance_pipe)
+            print("Needs Servicing (Pipeline):", need_service_pipe)
+
+        if electric_line_details.empty:
+            print("\nElectric line details not found in the dataset.")
+        else:
+            # Analyze Electric Line Details
+            cable_quality = electric_line_details['Cable Quality'].values[0]
+            cable_condition = electric_line_details['Cable Condition'].values[0]
+            last_maintenance_cable = electric_line_details['Last Maintenance (years)_y'].values[0]
+            need_service_cable = 'Yes' if (cable_condition == 'Poor') or (road_age - last_maintenance_cable) >= 5 else 'No'
+
+            # Print Electric Line Details
+            print("\nElectric Line Details:")
+            print("Cable Quality:", cable_quality)
+            print("Cable Condition:", cable_condition)
+            print("Last Maintenance Year (Electric Line):", last_maintenance_cable)
+            print("Needs Servicing (Electric Line):", need_service_cable)
+
+    def add_disaster_details(self, road_id):
+        disaster_type = input("Enter the type of disaster (e.g., flood, tsunami, earthquake): ")
+        disaster_year = int(input("Enter the year of the disaster: "))
+
+        self.dataset.loc[self.dataset['Road ID'] == int(road_id), 'Disaster Type'] = disaster_type
+        self.dataset.loc[self.dataset['Road ID'] == int(road_id), 'Disaster Year'] = disaster_year
+
+        print(f"Added disaster details for Road ID {road_id}.")
+
+        self.dataset.to_csv(self.dataset_path, index=False)
+
+    def urgent_roads(self):
+        if 'Disaster Type' in self.dataset.columns and 'Disaster Year' in self.dataset.columns:
+
+            urgent_roads_df = self.dataset.dropna(subset=['Disaster Type', 'Disaster Year'])
+
+            if urgent_roads_df.empty:
+                print("\nNo urgent roads found.")
+            else:
+                print("\nURGENT: Roads with Disaster Details:")
+                for _, row in urgent_roads_df.iterrows():
+                    print(f"\nRoad ID: {row['Road ID']}")
+                    print(f"Disaster Type: {row['Disaster Type']}")
+                    print(f"Disaster Year: {row['Disaster Year']}")
+                    print(f"Road Age (years): {row['Road Age (years)']}")
+                    print(f"Last Maintenance Year (Road): {row['Last Maintenance (years)_x']}")
+                    print(f"Road Condition: {row['Road Condition']}")
+                    print(f"Pipe Material: {row.get('Pipe Material', 'N/A')} (if applicable)")
+                    print(f"Electric Cable Material: {row.get('Electric Cable Material', 'N/A')} (if applicable)")
+        else:
+            print("\nNo urgent roads found.")
+
+def main_menu():
+    model = EcoGridModel()
+    while True:
+        print("\nMenu:")
+        print("1. Check Infrastructure Conditions")
+        print("2. Add Disaster Details")
+        print("3. Urgent Roads with Disaster Details")
+        print("4. Exit")
+
+        choice = input("Enter your choice (1, 2, 3, or 4): ")
+
+        if choice == '1':
+            road_id = input("Enter the Road ID: ")
+            model.check_conditions(road_id)
+        elif choice == '2':
+            road_id = input("Enter the Road ID: ")
+            model.add_disaster_details(road_id)
+        elif choice == '3':
+            model.urgent_roads()
+        elif choice == '4':
+            print("Exiting the program.")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main_menu()
